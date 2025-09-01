@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D T-Shirt Customizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+        }
+        
+        .canvas-container {
+            flex: 1;
+            min-width: 300px;
+            max-width: 600px;
+            height: 500px;
+            background-color: #2c2c2c;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            position: relative;
+        }
+        
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .controls {
+            flex: 1;
+            min-width: 300px;
+            max-width: 500px;
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .control-group {
+            margin-bottom: 25px;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .upload-container {
+            margin-bottom: 20px;
+        }
+        
+        .upload-btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background: linear-gradient(45deg, #ff416c, #ff4b2b);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(255, 75, 43, 0.4);
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 75, 43, 0.6);
+        }
+        
+        #imageUpload {
+            display: none;
+        }
+        
+        .color-picker {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .color-label {
+            width: 120px;
+        }
+        
+        input[type="color"] {
+            width: 60px;
+            height: 40px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: none;
+        }
+        
+        .animations {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        
+        .anim-btn {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .anim-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+        
+        .anim-btn.active {
+            background: linear-gradient(45deg, #00c9ff, #92fe9d);
+            color: #000;
+            font-weight: bold;
+        }
+        
+        .download-btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(45deg, #00b09b, #96c93d);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0, 176, 155, 0.4);
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 176, 155, 0.6);
+        }
+        
+        .preview-image {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        #imagePreview {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 8px;
+            border: 2px solid white;
+            display: none;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            opacity: 0.7;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .canvas-container, .controls {
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>3D T-Shirt Customizer</h1>
+            <p class="subtitle">Upload your design, customize, and download your unique 3D shirt</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="canvas-container">
+                <canvas id="renderCanvas"></canvas>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <h2>Upload Your Design</h2>
+                    <div class="upload-container">
+                        <label for="imageUpload" class="upload-btn">Choose Image</label>
+                        <input type="file" id="imageUpload" accept="image/*">
+                    </div>
+                    <div class="preview-image">
+                        <img id="imagePreview" alt="Your design preview">
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h2>Customize Colors</h2>
+                    <div class="color-picker">
+                        <span class="color-label">Garment Color:</span>
+                        <input type="color" id="shirtColor" value="#3a86ff">
+                    </div>
+                    <div class="color-picker">
+                        <span class="color-label">Background Color:</span>
+                        <input type="color" id="bgColor" value="#1a2a6c">
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h2>Select Animation</h2>
+                    <div class="animations">
+                        <button class="anim-btn" data-anim="rotate">Rotate</button>
+                        <button class="anim-btn" data-anim="bounce">Bounce</button>
+                        <button class="anim-btn" data-anim="pulse">Pulse</button>
+                        <button class="anim-btn" data-anim="wave">Wave</button>
+                        <button class="anim-btn active" data-anim="none">None</button>
+                    </div>
+                </div>
+                
+                <button class="download-btn" id="downloadBtn">Download 3D Shirt</button>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Created with Three.js - 3D T-Shirt Customizer &copy; 2023</p>
+        </footer>
+    </div>
+
+    <script>
+        // Variables for the 3D scene
+        let scene, camera, renderer, shirt, shirtMaterial;
+        let currentAnimation = 'none';
+        let clock = new THREE.Clock();
+        
+        // Initialize the scene
+        function init() {
+            // Create scene
+            scene = new THREE.Scene();
+            
+            // Create camera
+            camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            camera.position.z = 5;
+            
+            // Create renderer
+            const canvas = document.getElementById('renderCanvas');
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 5, 5);
+            scene.add(directionalLight);
+            
+            // Create shirt
+            createShirt();
+            
+            // Add orbit controls
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            
+            // Handle window resize
+            window.addEventListener('resize', onWindowResize);
+            
+            // Start animation loop
+            animate();
+        }
+        
+        // Create the shirt object
+        function createShirt() {
+            // Shirt geometry
+            const geometry = new THREE.Group();
+            
+            // Main body of the shirt
+            const bodyGeometry = new THREE.CylinderGeometry(1.5, 1.2, 2, 32);
+            const body = new THREE.Mesh(bodyGeometry);
+            geometry.add(body);
+            
+            // Sleeves
+            const sleeveGeometry = new THREE.CylinderGeometry(0.4, 0.3, 0.8, 16);
+            const leftSleeve = new THREE.Mesh(sleeveGeometry);
+            leftSleeve.position.set(-1.2, 0, 0);
+            leftSleeve.rotation.z = Math.PI / 4;
+            geometry.add(leftSleeve);
+            
+            const rightSleeve = new THREE.Mesh(sleeveGeometry);
+            rightSleeve.position.set(1.2, 0, 0);
+            rightSleeve.rotation.z = -Math.PI / 4;
+            geometry.add(rightSleeve);
+            
+            // Neck
+            const neckGeometry = new THREE.CylinderGeometry(0.6, 0.7, 0.2, 32);
+            const neck = new THREE.Mesh(neckGeometry);
+            neck.position.y = 1;
+            geometry.add(neck);
+            
+            // Create material
+            shirtMaterial = new THREE.MeshStandardMaterial({
+                color: document.getElementById('shirtColor').value,
+                roughness: 0.7,
+                metalness: 0.1
+            });
+            
+            // Create mesh
+            shirt = new THREE.Mesh(geometry, shirtMaterial);
+            shirt.rotation.x = Math.PI / 6;
+            scene.add(shirt);
+        }
+        
+        // Apply texture to shirt
+        function applyTextureToShirt(texture) {
+            shirtMaterial.map = texture;
+            shirtMaterial.needsUpdate = true;
+        }
+        
+        // Window resize handler
+        function onWindowResize() {
+            const canvas = renderer.domElement;
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+            
+            if (canvas.width !== width || canvas.height !== height) {
+                renderer.setSize(width, height, false);
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+            }
+        }
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const delta = clock.getDelta();
+            
+            // Apply selected animation
+            switch(currentAnimation) {
+                case 'rotate':
+                    shirt.rotation.y += delta;
+                    break;
+                case 'bounce':
+                    shirt.position.y = Math.sin(clock.elapsedTime * 2) * 0.2;
+                    break;
+                case 'pulse':
+                    const scale = 1 + Math.sin(clock.elapsedTime * 2) * 0.1;
+                    shirt.scale.set(scale, scale, scale);
+                    break;
+                case 'wave':
+                    shirt.rotation.z = Math.sin(clock.elapsedTime) * 0.2;
+                    break;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Event listeners
+        document.getElementById('imageUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        // Show preview
+                        const preview = document.getElementById('imagePreview');
+                        preview.src = event.target.result;
+                        preview.style.display = 'block';
+                        
+                        // Create texture and apply to shirt
+                        const texture = new THREE.Texture(img);
+                        texture.needsUpdate = true;
+                        applyTextureToShirt(texture);
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        document.getElementById('shirtColor').addEventListener('input', function(e) {
+            shirtMaterial.color.set(e.target.value);
+        });
+        
+        document.getElementById('bgColor').addEventListener('input', function(e) {
+            document.body.style.background = `linear-gradient(135deg, ${e.target.value}, #b21f1f, #fdbb2d)`;
+        });
+        
+        document.querySelectorAll('.anim-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.anim-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentAnimation = this.getAttribute('data-anim');
+            });
+        });
+        
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            // In a real implementation, this would capture the 3D scene and offer download
+            alert('In a full implementation, this would download your 3D shirt. This is a frontend demo.');
+        });
+        
+        // Initialize the application
+        init();
+    </script>
+</body>
+</html>
